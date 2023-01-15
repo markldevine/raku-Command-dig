@@ -1,0 +1,21 @@
+{
+  "auth": "zef:markldevine",
+  "authors": [ "Mark Devine <mark@markdevine.com>" ],
+  "depends": [
+    "Terminal::Getpass"
+  ],
+  "description": "dig",
+  "license": "Artistic-2.0",
+  "meta-version": 0,
+  "name": "Command::dig",
+  "perl": "6.d",
+  "provides": {
+    "dig": "lib/Command/dig.rakumod"
+  },
+  "resources": [],
+  "source-url": "https://github.com/markldevine/dig.git",
+  "tags": [
+    "COMMAND"
+  ],
+  "version": "0.0.1"
+}
