@@ -8,30 +8,19 @@ use Data::Dump::Tree;
 
 has Str     $.label;
 has Str     $.address;
-has Str     @.dns-servers;
+has Str     @.dns-servers   is required;
 has Str     @.dns-domains;
-has Bool    $.ipv4          = True;
-has Bool    $.nocomments    = True;
-has Bool    $.nocmd         = True;
-has Bool    $.nostats       = True;
-has Bool    $.noedns        = True;
-has Bool    $.nocookie      = True;
-has Bool    $.noquestion    = True;
-has Bool    $.noauthority   = True;
-has Bool    $.noadditional  = True;
 
 submethod TWEAK {
-}
-
-method expose {
+    fail ":label or :address are required minimally" unless $!label || $!address;
 }
 
 #   Grammars
 
-#   P520TSMJGB.wmata.com.   0       IN      CNAME   jatsmprd03.wmata.com.
-#   jatsmprd03.wmata.com.   0       IN      A       10.10.137.41
+#   P520TSMJGB.wwwww.com.   0       IN      CNAME   jatsmprd03.wwwww.com.
+#   jatsmprd03.wwwww.com.   0       IN      A       10.10.137.41
 
-grammar DIG_FORWARD {
+grammar DIG-FORWARD {
     token TOP {
         ^
         <record>+
@@ -64,23 +53,20 @@ grammar DIG_FORWARD {
         $<octet-1> = \d ** 1..3 
     }
     token record-type {
-        <A> || <CNAME>
-    }
-    token A {
-        'A'
-    }
-    token CNAME {
-        'CNAME'
+        'A' || 'CNAME'
     }
     regex name {
         ( \w || '-' || '.' <!before \s> )+
     }
 }
 
-#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     nimjgb.wmata.com.
-#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     p650nimjgb.wmata.com.
+class DIG-FORWARD-ACTIONS {
+}
 
-grammar DIG_REVERSE {
+#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     nimjgb.wwwww.com.
+#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     p650nimjgb.wwwww.com.
+
+grammar DIG-REVERSE {
     token TOP {
         ^
         <record>+
@@ -116,6 +102,9 @@ grammar DIG_REVERSE {
     }
 }
 
+class DIG-REVERSE-ACTIONS {
+}
+
 #   Check if supplied hostname/iplabel is resolvable into an IP address
 
 method lookup-forward (Str:D $ip-label!) {
@@ -139,7 +128,7 @@ method lookup-forward (Str:D $ip-label!) {
                                 :err;
             my $out     = $proc.out.slurp(:close);
             my $err     = $proc.err.slurp(:close);
-            my $match   = DIG_FORWARD.parse($out);
+            my $match   = DIG-FORWARD.parse($out, :actions(DIG-FORWARD-ACTIONS.new);
             return $match<ip-addr>.Str with $match;
         }
     }
@@ -168,7 +157,7 @@ method lookup-reverse (Str:D $ip-address!, Str :$expectation) {
                                 :err;
             my $out     = $proc.out.slurp(:close);
             my $err     = $proc.err.slurp(:close);
-            my $match   = DIG_REVERSE.parse($out);
+            my $match   = DIG-REVERSE.parse($out);
             with $match {
                 with $expectation {
                     for $match<record> -> $record {
@@ -197,7 +186,7 @@ method lookup-reverse (Str:D $ip-address!, Str :$expectation) {
                         :err;
     my $out     = $proc.out.slurp(:close);
     my $err     = $proc.err.slurp(:close);
-    my $match   = DIG_REVERSE.parse($out);
+    my $match   = DIG-REVERSE.parse($out);
     with $match {
         with $expectation {
             for $match<record> -> $record {
