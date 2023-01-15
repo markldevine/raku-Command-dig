@@ -11,6 +11,8 @@ has Str     $.address;
 has Str     @.dns-servers   is required;
 has Str     @.dns-domains;
 
+has         @!records;
+
 submethod TWEAK {
     fail ":label or :address are required minimally" unless $!label || $!address;
 }
@@ -21,85 +23,36 @@ submethod TWEAK {
 #   jatsmprd03.wwwww.com.   0       IN      A       10.10.137.41
 
 grammar DIG-FORWARD {
-    token TOP {
-        ^
-        <record>+
-    }
-    token record {
-        <name>
-        '.'
-        \s+
-        \d+
-        \s+
-        'IN'
-        \s+
-        <type>
-        \s+
-        <ip-addr>
-        $$
-        \n
-        $
-    }
-    token type {
-        'A' || 'CNAME'
-    }
-    token ip-addr {
-        $<octet-4> = \d ** 1..3 
-        '.'
-        $<octet-3> = \d ** 1..3 
-        '.'
-        $<octet-2> = \d ** 1..3 
-        '.'
-        $<octet-1> = \d ** 1..3 
-    }
-    token record-type {
-        'A' || 'CNAME'
-    }
-    regex name {
-        ( \w || '-' || '.' <!before \s> )+
-    }
+    token TOP               { ^ [ <A-record> || <CNAME-record> ]+ }
+    token A-record          { <name> '.' \s+ \d+ \s+ 'IN' \s+ 'A' \s+ <ip-addr> $$ \n }
+    token CNAME-record      { <name> '.' \s+ \d+ \s+ 'IN' \s+ 'CNAME' \s+ <canonical-name> $$ \n }
+    token ip-addr           { $<octet-4> = \d ** 1..3 '.' $<octet-3> = \d ** 1..3 '.' $<octet-2> = \d ** 1..3 '.' $<octet-1> = \d ** 1..3 }
+    token record-type       { 'A' || 'CNAME' }
+    regex name              { ( \w || '-' || '.' <!before \s> )+ }
+    regex canonical-name    { ( \w || '-' || '.' <!before \s> )+ }
 }
 
 class DIG-FORWARD-ACTIONS {
+    method system-clock-timestamp ($/) {
+        make DateTime.new(
+            year    => ~$/<year>,
+            month   => ~$/<alpha-month>.made,
+            day     => ~$/<day-of-month>,
+            hour    => ~$/<hms><hours>,
+            minute  => ~$/<hms><minutes>,
+            second  => ~$/<hms><seconds>,
+        );
+    }
 }
 
 #   194.1.121.170.in-addr.arpa. 259200 IN   PTR     nimjgb.wwwww.com.
 #   194.1.121.170.in-addr.arpa. 259200 IN   PTR     p650nimjgb.wwwww.com.
 
 grammar DIG-REVERSE {
-    token TOP {
-        ^
-        <record>+
-        $
-    }
-    token record {
-        ^^
-        <in-addr-arpa>
-        \s+
-        \d+
-        \s+
-        'IN'
-        \s+
-        'PTR'
-        \s+
-        <name>
-        '.'
-        $$
-        \n
-    }
-    token in-addr-arpa {
-        $<octet-4> = \d ** 1..3 
-        '.'
-        $<octet-3> = \d ** 1..3 
-        '.'
-        $<octet-2> = \d ** 1..3 
-        '.'
-        $<octet-1> = \d ** 1..3 
-        '.in-addr.arpa.'
-    }
-    regex name {
-        ( \w || '-' || '.' <!before \s> )+
-    }
+    token TOP               { ^ <record>+ $ }
+    token record            { ^^ <in-addr-arpa> \s+ \d+ \s+ 'IN' \s+ 'PTR' \s+ <name> '.' $$ \n }
+    token in-addr-arpa      { $<octet-4> = \d ** 1..3 '.' $<octet-3> = \d ** 1..3 '.' $<octet-2> = \d ** 1..3 '.' $<octet-1> = \d ** 1..3 '.in-addr.arpa.' }
+    regex name              { ( \w || '-' || '.' <!before \s> )+ }
 }
 
 class DIG-REVERSE-ACTIONS {
