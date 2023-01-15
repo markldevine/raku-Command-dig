@@ -1,0 +1,6 @@
+#!/usr/bin/env raku
+
+use lib '/home/mdevine/github.com/raku-Command-dig/lib';
+use Command::dig;
+
+=finish

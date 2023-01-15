@@ -8,8 +8,8 @@ use Data::Dump::Tree;
 
 has Str     $.label;
 has Str     $.address;
-has Str     @.dns-servers   is required;
-has Str     @.dns-domains;
+has         @.dns-servers   is required;
+has         @.dns-domains;
 
 has         @!records;
 
@@ -61,8 +61,8 @@ class DIG-REVERSE-ACTIONS {
 #   Check if supplied hostname/iplabel is resolvable into an IP address
 
 method lookup-forward (Str:D $ip-label!) {
-    for @dns-servers.pick -> $dns-server {
-        for @dns-domains -> $dns-domain {
+    for @.dns-servers.pick -> $dns-server {
+        for @.dns-domains -> $dns-domain {
             my $proc    = run   '/usr/bin/dig',
                                 '-4',
                                 '+nocomments',
@@ -81,7 +81,8 @@ method lookup-forward (Str:D $ip-label!) {
                                 :err;
             my $out     = $proc.out.slurp(:close);
             my $err     = $proc.err.slurp(:close);
-            my $match   = DIG-FORWARD.parse($out, :actions(DIG-FORWARD-ACTIONS.new);
+#%%%        my $match   = DIG-FORWARD.parse($out, :actions(DIG-FORWARD-ACTIONS.new);
+            my $match   = DIG-FORWARD.parse($out);
             return $match<ip-addr>.Str with $match;
         }
     }
@@ -89,8 +90,8 @@ method lookup-forward (Str:D $ip-label!) {
 }
 
 method lookup-reverse (Str:D $ip-address!, Str :$expectation) {
-    for @dns-servers -> $dns-server {
-        for @dns-domains -> $dns-domain {
+    for @.dns-servers -> $dns-server {
+        for @.dns-domains -> $dns-domain {
             my $proc    = run   '/usr/bin/dig',
                                 '-4',
                                 '+nocomments',
