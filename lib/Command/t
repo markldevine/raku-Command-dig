@@ -2,14 +2,18 @@
 
 use lib '/home/mdevine/github.com/raku-Command-dig/lib';
 use Command::dig;
-use Data::Dump::Tree;
 
 my Command::dig $digger    .= new(
-#                                   :dns-servers(<10.10.43.40 10.10.43.40>),
+                                     :dns-servers<170.121.18.30 170.121.218.30>,
+                                     :dns-domains<wmata.com wmata.local ncs.wmata.com video.wmata.com>,
                                  );
-$digger.dns-servers         = <10.10.43.40 10.10.43.40>;
-$digger.dns-domains         = <wmata.com wmata.local>;
 
-$digger.resolve('isplc02');
+#$digger.dns-servers         = <10.10.43.40 10.10.43.40>;
+#$digger.dns-domains         = <wmata.com wmata.local>;
+
+dd $digger.resolve('isplc02');
+dd $digger.resolve('P520TSMJGB');
+dd $digger.resolve('JATSMPRD03');
+dd $digger.resolve('ctstmgtgate1lpv');
 
 =finish
