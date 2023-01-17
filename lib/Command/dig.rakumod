@@ -226,3 +226,41 @@ method !analyze-reverse ($match, :$resolution) {
 }
 
 =finish
+
+--- wwww.wmata.com
+
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.wmata.com A
+www.wmata.com.          259200  IN      CNAME   www.f5dns.wmata.com.
+www.f5dns.wmata.com.    2       IN      A       10.12.115.168
+
+
+
+--- www.google.com
+
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.google.com A
+    www.google.com.         88      IN      A       142.251.163.105
+    www.google.com.         88      IN      A       142.251.163.147
+    www.google.com.         88      IN      A       142.251.163.106
+    www.google.com.         88      IN      A       142.251.163.99
+    www.google.com.         88      IN      A       142.251.163.104
+    www.google.com.         88      IN      A       142.251.163.103
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 -x 142.251.163.105 PTR
+
+    105.163.251.142.in-addr.arpa. 2811 IN   PTR     wv-in-f105.1e100.net.
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 wv-in-f105.1e100.net A
+    wv-in-f105.1e100.net.   3600    IN      A       142.251.163.105
+
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 -x 142.251.163.147 PTR
+    147.163.251.142.in-addr.arpa. 507 IN    PTR     wv-in-f147.1e100.net.
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 wv-in-f147.1e100.net A
+    wv-in-f147.1e100.net.   6       IN      A       142.251.163.147
+
+
+
+-- www.ibm.com
+
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.ibm.com A
+    www.ibm.com.                                2247    IN      CNAME   www.ibm.com.cs186.net.
+    www.ibm.com.cs186.net.                      126     IN      CNAME   outer-global-dual.ibmcom-tls12.edgekey.net.
+    outer-global-dual.ibmcom-tls12.edgekey.net. 2534 IN CNAME e7817.dscx.akamaiedge.net.
+    e7817.dscx.akamaiedge.net.                  20   IN      A       104.104.75.37
