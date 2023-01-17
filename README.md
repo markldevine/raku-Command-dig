@@ -11,7 +11,7 @@ SYNOPSIS
                                        :dns-domains<sales.business.com business.com>,
                                       );
     printf "%-17s%s\n", $resolution.ip-address, $resolution.canonical-name;
-    .put for $resolution.alias-namess;
+    .put for $resolution.alias-names;
 ```
 
 AUTHOR
