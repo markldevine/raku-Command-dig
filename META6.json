@@ -8,7 +8,7 @@
   "name": "Command::dig",
   "perl": "6.d",
   "provides": {
-    "dig": "lib/Command/dig.rakumod"
+    "Command::dig": "lib/Command/dig.rakumod"
   },
   "resources": [],
   "source-url": "https://github.com/markldevine/dig.git",
