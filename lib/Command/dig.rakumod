@@ -139,11 +139,11 @@ method !analyze-forward ($match, :$resolution) {
         elsif $record<canonical-name-record>:exists {
             my $c-name  = $record<canonical-name-record><canonical-name>.Str;
             if $canonical-name && $c-name ne $canonical-name {
-                warn 'Multiple canonical names exist! STORED: <'
-                     ~ $canonical-name
-                     ~ '>  NEW: <'
-                     ~ $c-name
-                     ~ '>';
+                $*ERR.put:  'Multiple canonical names exist! STORED: <'
+                            ~ $canonical-name
+                            ~ '>  NEW: <'
+                            ~ $c-name
+                            ~ '>';
             }
             else {
                 $canonical-name = $c-name;
@@ -163,11 +163,11 @@ method !analyze-forward ($match, :$resolution) {
     }
     if $resolution.canonical-name {
         if $canonical-name && $resolution.canonical-name ne $canonical-name {
-            warn 'Multiple canonical names exist! STORED: <'
-                 ~ $resolution.canonical-name
-                 ~ '>  NEW: <'
-                 ~ $canonical-name
-                 ~ '>';
+            $*ERR.put:  'Multiple canonical names exist! STORED: <'
+                        ~ $resolution.canonical-name
+                        ~ '>  NEW: <'
+                        ~ $canonical-name
+                        ~ '>';
         }
     }
     else {
