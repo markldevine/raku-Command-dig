@@ -126,11 +126,11 @@ method !analyze-forward ($match, :$resolution) {
             $ip-address = $record<address-record><ip-address>.Str;
             my $c-name  = $record<address-record><canonical-name>.Str;
             if $canonical-name && $c-name ne $canonical-name {
-                warn 'Multiple canonical names exist! STORED: <'
-                     ~ $canonical-name
-                     ~ '>  NEW: <'
-                     ~ $c-name
-                     ~ '>';
+                $*ERR.put:  'Multiple canonical names exist! STORED: <'
+                            ~ $canonical-name
+                            ~ '>  NEW: <'
+                            ~ $c-name
+                            ~ '>';
             }
             else {
                 $canonical-name = $c-name;
