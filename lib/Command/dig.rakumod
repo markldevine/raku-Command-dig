@@ -10,9 +10,9 @@ has         @.dns-servers   is rw   = [];
 has         @.dns-domains   is rw   = [];
 
 class Resolution {
-    has         $.ip-address;
-    has         @.alias-names       = [];
-    has         $.canonical-name;
+    has         $.ip-address        is rw;
+    has         %.alias-names       is rw;
+    has         $.canonical-name    is rw;
 }
 
 constant    @base-cmd       =       '/usr/bin/dig',
@@ -40,18 +40,19 @@ grammar DIG-FORWARD {
 }
 
 method resolve (Str:D $label-or-ipv4) {
+    my Resolution $resolution .= new;
     if $label-or-ipv4 ~~ / ^ \d ** 1..3 '.' \d ** 1..3 '.' \d ** 1..3 '.' \d ** 1..3 $ / {
-        return self!lookup-reverse($label-or-ipv4);
+        return self!lookup-reverse($label-or-ipv4, :$resolution);
     }
     if $label-or-ipv4 ~~ / ^ ( \w || '-' || '.' <!before \s> )+ $ / {
-        return self!lookup-forward($label-or-ipv4);
+        return self!lookup-forward($label-or-ipv4, :$resolution);
     }
     else {
         fail "Cannot reconcile if <$label-or-ipv4> is a name/label or an IP address";
     }
 }
 
-method !lookup-forward (Str:D $ip-label!) {
+method !lookup-forward (Str:D $ip-label!, :$resolution) {
     for @.dns-servers -> $dns-server {
         if @.dns-domains.elems {
             for @.dns-domains -> $dns-domain {
@@ -63,7 +64,7 @@ method !lookup-forward (Str:D $ip-label!) {
                 my $proc    =   run @cmd, :out, :err;
                 my $out     =   $proc.out.slurp(:close);
                 my $err     =   $proc.err.slurp(:close);
-                my $resobj  =   self!analyze-forward(DIG-FORWARD.parse($out));
+                my $resobj  =   self!analyze-forward(DIG-FORWARD.parse($out), :$resolution);
                 return $resobj with $resobj;
             }
         }
@@ -75,7 +76,7 @@ method !lookup-forward (Str:D $ip-label!) {
             my $proc    =   run @cmd, :out, :err;
             my $out     =   $proc.out.slurp(:close);
             my $err     =   $proc.err.slurp(:close);
-            return self!analyze-forward(DIG-FORWARD.parse($out));
+            return self!analyze-forward(DIG-FORWARD.parse($out), :$resolution);
         }
     }
     if @.dns-domains.elems {
@@ -87,7 +88,7 @@ method !lookup-forward (Str:D $ip-label!) {
             my $proc    =   run @cmd, :out, :err;
             my $out     =   $proc.out.slurp(:close);
             my $err     =   $proc.err.slurp(:close);
-            my $resobj  =   self!analyze-forward(DIG-FORWARD.parse($out));
+            my $resobj  =   self!analyze-forward(DIG-FORWARD.parse($out), :$resolution);
             return $resobj with $resobj;
         }
     }
@@ -98,7 +99,7 @@ method !lookup-forward (Str:D $ip-label!) {
         my $proc    =   run @cmd, :out, :err;
         my $out     =   $proc.out.slurp(:close);
         my $err     =   $proc.err.slurp(:close);
-        my $resobj  =   self!analyze-forward(DIG-FORWARD.parse($out));
+        my $resobj  =   self!analyze-forward(DIG-FORWARD.parse($out), :$resolution);
         return $resobj with $resobj;
     }
     return Nil;
@@ -106,7 +107,7 @@ method !lookup-forward (Str:D $ip-label!) {
 
 method !analyze-forward ($match) {
     return Nil unless $match ~~ Match;
-    my @alias-names;
+    my %alias-names;
     my $canonical-name;
     my $ip-address;
     for $match<records> -> $record {
@@ -115,8 +116,8 @@ method !analyze-forward ($match) {
             $canonical-name = $record<address-record><canonical-name>.Str;
         }
         elsif $record<canonical-name-record>:exists {
-            @alias-names.push: $record<canonical-name-record><alias-name>.Str;
             $canonical-name = $record<canonical-name-record><canonical-name>.Str;
+            %alias-names{$record<canonical-name-record><alias-name>.Str} = $canonical-name;
         }
         else {
             die 'Should never happen...';
@@ -136,7 +137,7 @@ grammar DIG-REVERSE {
     token name              { ( \w || '-' || '.' <!before \s> )+ }
 }
 
-method !lookup-reverse (Str:D $ip-address!) {
+method !lookup-reverse (Str:D $ip-address!, :$resolution) {
     for @.dns-servers -> $dns-server {
         my @cmd     =   flat @base-cmd,
                         '@' ~ $dns-server,
@@ -148,7 +149,7 @@ method !lookup-reverse (Str:D $ip-address!) {
         my $err     =   $proc.err.slurp(:close);
         my $match   =   DIG-REVERSE.parse($out);
         if $match {
-            my $analysis = self!analyze-reverse($match);
+            my $analysis = self!analyze-reverse($match, :$resolution);
             return $analysis with $analysis;
         }
     }
@@ -159,7 +160,7 @@ method !lookup-reverse (Str:D $ip-address!) {
     my $proc    =   run @cmd, :out, :err;
     my $out     =   $proc.out.slurp(:close);
     my $err     =   $proc.err.slurp(:close);
-    my $resobj  =   self!analyze-reverse(DIG-REVERSE.parse($out));
+    my $resobj  =   self!analyze-reverse(DIG-REVERSE.parse($out), :$resolution);
     return $resobj with $resobj;
     return Nil;
 }
@@ -167,13 +168,14 @@ method !lookup-reverse (Str:D $ip-address!) {
 #   194.1.121.170.in-addr.arpa. 259200 IN   PTR     nimjgb.wwwww.com.
 #   194.1.121.170.in-addr.arpa. 259200 IN   PTR     p650nimjgb.wwwww.com.
 
-method !analyze-reverse ($match) {
-dd $match; die;
+method !analyze-reverse ($match, :$resolution) {
     return Nil unless $match ~~ Match;
     my @alias-names;
     my $canonical-name;
     my $ip-address;
     for $match<pointer-records> -> $record {
+
+dd $record; die;
         if $record<address-record>:exists {
             $ip-address = $record<address-record><ip-address>.Str;
             $canonical-name = $record<address-record><canonical-name>.Str;
@@ -190,3 +192,4 @@ dd $match; die;
     return Resolution.new(:@alias-names, :$canonical-name, :$ip-address);
 }
 
+=finish

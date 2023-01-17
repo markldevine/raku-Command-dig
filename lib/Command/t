@@ -8,8 +8,8 @@ my Command::dig $digger    .= new(
                                      :dns-domains<wmata.com wmata.local ncs.wmata.com video.wmata.com>,
                                  );
 
-#$digger.dns-servers         = <10.10.43.40 10.10.43.40>;
-#$digger.dns-domains         = <wmata.com wmata.local>;
+$digger.dns-servers         = <10.10.43.40 10.10.43.40>;
+$digger.dns-domains         = <wmata.com wmata.local>;
 
 dd $digger.resolve('isplc02');
 dd $digger.resolve('10.11.101.230');
