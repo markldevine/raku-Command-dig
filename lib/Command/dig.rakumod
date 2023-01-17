@@ -208,16 +208,15 @@ method !lookup-reverse (Str:D $ip-address!, :$resolution) {
             return $resobj with $resobj;
         }
     }
-    else {
-        my @cmd     =   flat @base-cmd,
-                        '-x',
-                        $ip-address,
-                        'IN';
-        my $proc    =   run @cmd, :out, :err;
-        my $out     =   $proc.out.slurp(:close);
-        my $err     =   $proc.err.slurp(:close);
-        return self!analyze-reverse(DIG-REVERSE.parse($out), :$resolution);
-    }
+    my @cmd     =   flat @base-cmd,
+                    '-x',
+                    $ip-address,
+                    'IN';
+    my $proc    =   run @cmd, :out, :err;
+    my $out     =   $proc.out.slurp(:close);
+    my $err     =   $proc.err.slurp(:close);
+    my $resobj  =   self!analyze-reverse(DIG-REVERSE.parse($out), :$resolution);
+    return $resobj with $resobj;
     return Nil;
 }
 
