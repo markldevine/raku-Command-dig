@@ -1,8 +1,8 @@
 unit class Command::dig:api<1>:auth<Mark Devine (mark@markdevine.com)>;
 
-use Terminal::ANSIColor;
-use Prettier::Table;
-use Data::Dump::Tree;
+#use Terminal::ANSIColor;
+#use Prettier::Table;
+#use Data::Dump::Tree;
 #use Grammar::Debugger;
 #use Grammar::Tracer;
 
