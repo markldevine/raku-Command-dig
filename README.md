@@ -6,12 +6,12 @@ Runs _dig_.
 SYNOPSIS
 ========
 ```
-    my dig $dig-obj .= new(
-                            :label<host_to_lookup>,
-                            :address<ip_to_lookup>,
-                          );
-    printf "%-17s%s\n", $dig-obj.canonical-ip, $dig-obj.canonical-label;
-    .put for $dig-obj.aliases;
+    my Command::dig $resolution .= new(
+                                       :dns-servers<10.10.10.10 10.11.11.11>,
+                                       :dns-domains<sales.business.com business.com>,
+                                      );
+    printf "%-17s%s\n", $resolution.ip-address, $resolution.canonical-name;
+    .put for $resolution.alias-namess;
 ```
 
 AUTHOR
