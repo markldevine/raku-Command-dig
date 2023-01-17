@@ -1,11 +1,5 @@
 unit class Command::dig:api<1>:auth<Mark Devine (mark@markdevine.com)>;
 
-#use Terminal::ANSIColor;
-#use Prettier::Table;
-#use Data::Dump::Tree;
-#use Grammar::Debugger;
-#use Grammar::Tracer;
-
 has         @.dns-servers   is rw   = [];
 has         @.dns-domains   is rw   = [];
 
@@ -27,8 +21,8 @@ constant    @base-cmd       =       '/usr/bin/dig',
                                     '+noauthority',
                                     '+noadditional';
 
-#   P520TSMJGB.wwwww.com.   0       IN      CNAME   jatsmprd03.wwwww.com.
-#   jatsmprd03.wwwww.com.   0       IN      A       10.10.137.41
+#   HHHHHHHHHH.wwwww.com.   0       IN      CNAME   kkkkkkkkkk.wwwww.com.
+#   kkkkkkkkkk.wwwww.com.   0       IN      A       11.11.111.11
 
 grammar DIG-FORWARD {
     token TOP                   { ^ <records>+ }
@@ -183,8 +177,8 @@ method !analyze-forward ($match, :$resolution) {
     return($resolution);
 }
 
-#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     nimjgb.wwwww.com.
-#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     p650nimjgb.wwwww.com.
+#   222.2.222.222.in-addr.arpa. 259200 IN   PTR     nnnnnn.wwwww.com.
+#   222.2.222.222.in-addr.arpa. 259200 IN   PTR     pppppppppp.wwwww.com.
 
 grammar DIG-REVERSE {
     token TOP               { ^ <pointer-records>+ $ }
@@ -219,9 +213,6 @@ method !lookup-reverse (Str:D $ip-address!, :$resolution) {
     return $resobj with $resobj;
     return Nil;
 }
-
-#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     nimjgb.wwwww.com.
-#   194.1.121.170.in-addr.arpa. 259200 IN   PTR     p650nimjgb.wwwww.com.
 
 method !analyze-reverse ($match, :$resolution) {
     return Nil unless $match ~~ Match;
