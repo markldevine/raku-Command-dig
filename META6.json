@@ -1,9 +1,7 @@
 {
   "auth": "zef:markldevine",
   "authors": [ "Mark Devine <mark@markdevine.com>" ],
-  "depends": [
-    "Terminal::Getpass"
-  ],
+  "depends": [],
   "description": "dig",
   "license": "Artistic-2.0",
   "meta-version": 0,
