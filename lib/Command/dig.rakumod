@@ -116,14 +116,32 @@ method !lookup-forward (Str:D $ip-label!, :$resolution) {
     return Nil;
 }
 
+#
+#-- www.google.com
+#dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.google.com A
+#    www.google.com.         88      IN      A       142.251.163.105
+#    www.google.com.         88      IN      A       142.251.163.147
+#    www.google.com.         88      IN      A       142.251.163.106
+#    www.google.com.         88      IN      A       142.251.163.99
+#    www.google.com.         88      IN      A       142.251.163.104
+#    www.google.com.         88      IN      A       142.251.163.103
+#
+#-- www.ibm.com
+#
+#dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.ibm.com A
+#    www.ibm.com.                                2247    IN      CNAME   www.ibm.com.cs186.net.
+#    www.ibm.com.cs186.net.                      126     IN      CNAME   outer-global-dual.ibmcom-tls12.edgekey.net.
+#    outer-global-dual.ibmcom-tls12.edgekey.net. 2534 IN CNAME e7817.dscx.akamaiedge.net.
+#    e7817.dscx.akamaiedge.net.                  20   IN      A       104.104.75.37
+
 method !analyze-forward ($match, :$resolution) {
     return Nil unless $match ~~ Match;
-    my @alias-names = [];
+    my %alias-names;
     my $canonical-name;
-    my $ip-address;
+    my @ip-addresses    = [];
     for $match<records> -> $record {
         if $record<address-record>:exists {
-            $ip-address = $record<address-record><ip-address>.Str;
+            @ip-addresses.push: $record<address-record><ip-address>.Str;
             my $c-name  = $record<address-record><canonical-name>.Str;
             if $canonical-name && $c-name ne $canonical-name {
                 $*ERR.put:  'Multiple canonical names exist! STORED: <'
@@ -137,30 +155,23 @@ method !analyze-forward ($match, :$resolution) {
             }
         }
         elsif $record<canonical-name-record>:exists {
-            my $c-name  = $record<canonical-name-record><canonical-name>.Str;
-            if $canonical-name && $c-name ne $canonical-name {
-                $*ERR.put:  'Multiple canonical names exist! STORED: <'
-                            ~ $canonical-name
-                            ~ '>  NEW: <'
-                            ~ $c-name
-                            ~ '>';
-            }
-            else {
-                $canonical-name = $c-name;
-            }
-            @alias-names.push: $record<canonical-name-record><alias-name>.Str;
+            %alias-names{$record<canonical-name-record><alias-name>.Str} = $record<canonical-name-record><canonical-name>.Str;
         }
         else {
             die 'Should never happen...';
         }
     }
     return Nil unless $ip-address && $canonical-name;
-    my %h = $resolution.alias-names;
-    for @alias-names -> $alias-name {
-        next if %h{$alias-name}:exists;
-        %h{$alias-name}         = 0;
+    if %alias-names.elems {
+        my %h = $resolution.alias-names;
+        for %alias-names.keys -> $alias-name {
+            die 'analyze-forward: alias: <' ~ $alias-name ~ '> --> <' ~ %alias-names{$alias-name} ~ '> previously recorded as <' ~ %h{$alias-name} ~ '>' if %h{$alias-name}:exists && %h{$alias-name} ne %alias-names{$alias-name};
+            %h{$alias-name} = %alias-names{$alias-name};
+        }
         $resolution.alias-names = %h;
     }
+
+#%%%
     if $resolution.canonical-name {
         if $canonical-name && $resolution.canonical-name ne $canonical-name {
             $*ERR.put:  'Multiple canonical names exist! STORED: <'
