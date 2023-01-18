@@ -1,13 +1,68 @@
 unit class Command::dig:api<1>:auth<Mark Devine (mark@markdevine.com)>;
 
+submethod TWEAK {
+    die "Install 'bind-utils' (or your OSes method) to provide 'dig' utility."
+        unless "/usr/bin/dig".IO.x || "/bin/dig".IO.x;
+}
+
 has         @.dns-servers   is rw   = [];
 has         @.dns-domains   is rw   = [];
 
 class Resolution {
-    has         $.ip-address        is rw;
+    has         %.ip-addresses      is rw;
     has         %.alias-names       is rw;
     has         $.canonical-name    is rw;
-    has         @.pointer-names     is rw;
+    has         %.pointer-names     is rw;
+
+    method merge-canonical-name (Str:D $new-canonical-name) {
+        if $!canonical-name {
+            if $new-canonical-name && $!canonical-name ne $new-canonical-name {
+                $*ERR.put:  'Multiple canonical names exist! STORED: <'
+                            ~ $!canonical-name
+                            ~ '>  NEW: <'
+                            ~ $new-canonical-name
+                            ~ '>';
+                die;
+            }
+        }
+        else {
+            $!canonical-name    = $new-canonical-name;
+        }
+    }
+
+    method merge-ip-addresses (@new-ip-addresses) {
+        for @new-ip-addresses -> $new-ip-address {
+            if %!ip-addresses{$new-ip-address}:exists {
+                warn 'New IP address <' ~ $new-ip-address ~ '> already encountered. Code to reconcile NYI...'
+            }
+            else {
+                %!ip-addresses{$new-ip-address} = 0;
+            }
+        }
+    }
+
+    method merge-alias-names (Hash:D %new-alias-names) {
+        for %new-alias-names.keys -> $new-alias-name {
+            if %!alias-names{$new-alias-name}:exists && %new-alias-names{$new-alias-name} ne %!alias-names{$new-alias-name} {
+                die 'Alias <' ~ $new-alias-name ~ '> --> <' ~ %new-alias-names{$new-alias-name} ~ '> previously recorded as <' ~ %!alias-names{$new-alias-name} ~ '>';
+            }
+            else {
+                %!alias-names{$new-alias-name} = %new-alias-names{$new-alias-name};
+            }
+        }
+    }
+
+    method merge-pointer-names (@new-pointer-names) {
+        for @new-pointer-names -> $new-pointer-name {
+            if %!pointer-names{$new-pointer-name}:exists {
+                warn 'New PTR name <' ~ $new-pointer-name ~ '> already encountered. Code to reconcile NYI...'
+            }
+            else {
+                %!pointer-names{$new-pointer-name} = 0;
+            }
+        }
+    }
+
 }
 
 constant    @base-cmd       =       '/usr/bin/dig',
@@ -48,7 +103,11 @@ method resolve (Str:D $label-or-ipv4) {
     elsif $label-or-ipv4 ~~ / ^ ( \w || '-' || '.' <!before \s> )+ $ / {
         my $retval = self!lookup-forward($label-or-ipv4, :$resolution);
         return Nil unless $retval;
-        self!lookup-reverse($resolution.ip-address, :$resolution);
+dd $resolution; die;
+        for $resolution.ip-addresses.keys -> $ip-address {
+            self!lookup-reverse($resolution.ip-address, :$resolution);
+        }
+
         if $resolution.pointer-names.elems {
             my %h = $resolution.alias-names;
             for $resolution.pointer-names -> $pointer-name {
@@ -116,8 +175,6 @@ method !lookup-forward (Str:D $ip-label!, :$resolution) {
     return Nil;
 }
 
-#
-#-- www.google.com
 #dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.google.com A
 #    www.google.com.         88      IN      A       142.251.163.105
 #    www.google.com.         88      IN      A       142.251.163.147
@@ -126,13 +183,12 @@ method !lookup-forward (Str:D $ip-label!, :$resolution) {
 #    www.google.com.         88      IN      A       142.251.163.104
 #    www.google.com.         88      IN      A       142.251.163.103
 #
-#-- www.ibm.com
-#
-#dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.ibm.com A
-#    www.ibm.com.                                2247    IN      CNAME   www.ibm.com.cs186.net.
-#    www.ibm.com.cs186.net.                      126     IN      CNAME   outer-global-dual.ibmcom-tls12.edgekey.net.
-#    outer-global-dual.ibmcom-tls12.edgekey.net. 2534 IN CNAME e7817.dscx.akamaiedge.net.
-#    e7817.dscx.akamaiedge.net.                  20   IN      A       104.104.75.37
+#dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 -x 142.251.163.105 PTR
+#    105.163.251.142.in-addr.arpa. 2811 IN   PTR     wv-in-f105.1e100.net.
+#dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 wv-in-f105.1e100.net A
+#    wv-in-f105.1e100.net.   3600    IN      A       142.251.163.105
+
+#   for <address-records> -> lookup-reverse($address-record{$address}......  %%%%%%%
 
 method !analyze-forward ($match, :$resolution) {
     return Nil unless $match ~~ Match;
@@ -144,11 +200,7 @@ method !analyze-forward ($match, :$resolution) {
             @ip-addresses.push: $record<address-record><ip-address>.Str;
             my $c-name  = $record<address-record><canonical-name>.Str;
             if $canonical-name && $c-name ne $canonical-name {
-                $*ERR.put:  'Multiple canonical names exist! STORED: <'
-                            ~ $canonical-name
-                            ~ '>  NEW: <'
-                            ~ $c-name
-                            ~ '>';
+                die 'Multiple canonical names exist in A records! STORED: <' ~ $canonical-name ~ '>  NEW: <' ~ $c-name ~ '>';
             }
             else {
                 $canonical-name = $c-name;
@@ -161,30 +213,10 @@ method !analyze-forward ($match, :$resolution) {
             die 'Should never happen...';
         }
     }
-    return Nil unless $ip-address && $canonical-name;
-    if %alias-names.elems {
-        my %h = $resolution.alias-names;
-        for %alias-names.keys -> $alias-name {
-            die 'analyze-forward: alias: <' ~ $alias-name ~ '> --> <' ~ %alias-names{$alias-name} ~ '> previously recorded as <' ~ %h{$alias-name} ~ '>' if %h{$alias-name}:exists && %h{$alias-name} ne %alias-names{$alias-name};
-            %h{$alias-name} = %alias-names{$alias-name};
-        }
-        $resolution.alias-names = %h;
-    }
-
-#%%%
-    if $resolution.canonical-name {
-        if $canonical-name && $resolution.canonical-name ne $canonical-name {
-            $*ERR.put:  'Multiple canonical names exist! STORED: <'
-                        ~ $resolution.canonical-name
-                        ~ '>  NEW: <'
-                        ~ $canonical-name
-                        ~ '>';
-        }
-    }
-    else {
-        $resolution.canonical-name      = $canonical-name;
-    }
-    $resolution.ip-address              = $ip-address;
+    return Nil unless @ip-addresses.elems && $canonical-name;
+    $resolution.merge-alias-names(%alias-names) if %alias-names.elems;
+    $resolution.merge-canonical-name($canonical-name);
+    $resolution.merge-ip-addresses(@ip-addresses);
     return($resolution);
 }
 
@@ -255,8 +287,8 @@ dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +n
     www.google.com.         88      IN      A       142.251.163.99
     www.google.com.         88      IN      A       142.251.163.104
     www.google.com.         88      IN      A       142.251.163.103
-dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 -x 142.251.163.105 PTR
 
+dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 -x 142.251.163.105 PTR
     105.163.251.142.in-addr.arpa. 2811 IN   PTR     wv-in-f105.1e100.net.
 dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 wv-in-f105.1e100.net A
     wv-in-f105.1e100.net.   3600    IN      A       142.251.163.105
@@ -273,5 +305,5 @@ dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +n
 dig -4 +nocomments +nocmd +nostats +noedns +nocookie +noquestion +noauthority +noadditional @10.10.43.40 www.ibm.com A
     www.ibm.com.                                2247    IN      CNAME   www.ibm.com.cs186.net.
     www.ibm.com.cs186.net.                      126     IN      CNAME   outer-global-dual.ibmcom-tls12.edgekey.net.
-    outer-global-dual.ibmcom-tls12.edgekey.net. 2534 IN CNAME e7817.dscx.akamaiedge.net.
-    e7817.dscx.akamaiedge.net.                  20   IN      A       104.104.75.37
+    outer-global-dual.ibmcom-tls12.edgekey.net. 2534    IN      CNAME   e7817.dscx.akamaiedge.net.
+    e7817.dscx.akamaiedge.net.                  20      IN      A       104.104.75.37
