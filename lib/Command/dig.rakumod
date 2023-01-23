@@ -23,7 +23,6 @@ class Resolution {
                             ~ '>  NEW: <'
                             ~ $new-canonical-name
                             ~ '>';
-                die;
             }
         }
         else {
@@ -183,13 +182,7 @@ method !analyze-forward ($match, :$resolution) {
     for $match<records> -> $record {
         if $record<address-record>:exists {
             @ip-addresses.push: $record<address-record><ip-address>.Str;
-            my $c-name  = $record<address-record><canonical-name>.Str;
-            if $canonical-name && $c-name ne $canonical-name {
-                die 'Multiple canonical names exist in A records! STORED: <' ~ $canonical-name ~ '>  NEW: <' ~ $c-name ~ '>';
-            }
-            else {
-                $canonical-name = $c-name;
-            }
+            $canonical-name  = $record<address-record><canonical-name>.Str;
         }
         elsif $record<canonical-name-record>:exists {
             @alias-names.push: $record<canonical-name-record><alias-name>.Str;
