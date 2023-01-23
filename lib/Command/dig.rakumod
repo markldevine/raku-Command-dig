@@ -215,7 +215,6 @@ method !analyze-forward ($match, :$resolution) {
 grammar DIG-REVERSE {
     token TOP               { ^ <pointer-records>+ $ }
     token pointer-records   { ^^ <in-addr-arpa> \s+ \d+ \s+ 'IN' \s+ 'PTR' \s+ <name> '.' $$ \n }
-#   token in-addr-arpa      { $<octet-4> = \d ** 1..3 '.' $<octet-3> = \d ** 1..3 '.' $<octet-2> = \d ** 1..3 '.' $<octet-1> = \d ** 1..3 '.in-addr.arpa.' }
     token in-addr-arpa      { \d ** 1..3 '.' \d ** 1..3 '.' \d ** 1..3 '.' \d ** 1..3 '.in-addr.arpa.' }
     token name              { ( \w || '-' || '.' <!before \s> )+ }
 }
