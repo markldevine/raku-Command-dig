@@ -8,26 +8,42 @@ submethod TWEAK {
 has         @.dns-servers   is rw   = [];
 has         @.dns-domains   is rw   = [];
 
+#class Resolution {
+#    has         %.ip-addresses;
+#    has         @.alias-names-chronological;
+#    has         %.alias-names;
+#    has         $.canonical-name;
+#    has         %.pointer-names;
+#
+#    method merge-canonical-name (Str:D $new-canonical-name) {
+#        if $!canonical-name {
+#            if $new-canonical-name && $!canonical-name ne $new-canonical-name {
+#                $*ERR.put:  'Multiple canonical names exist! STORED: <'
+#                            ~ $!canonical-name
+#                            ~ '>  NEW: <'
+#                            ~ $new-canonical-name
+#                            ~ '>';
+#            }
+#        }
+#        else {
+#            $!canonical-name    = $new-canonical-name;
+#        }
+#    }
+
 class Resolution {
     has         %.ip-addresses;
     has         @.alias-names-chronological;
     has         %.alias-names;
-    has         $.canonical-name;
+    has         %.canonical-names;
     has         %.pointer-names;
 
-    method merge-canonical-name (Str:D $new-canonical-name) {
-        if $!canonical-name {
-            if $new-canonical-name && $!canonical-name ne $new-canonical-name {
-                $*ERR.put:  'Multiple canonical names exist! STORED: <'
-                            ~ $!canonical-name
-                            ~ '>  NEW: <'
-                            ~ $new-canonical-name
-                            ~ '>';
-            }
-        }
-        else {
-            $!canonical-name    = $new-canonical-name;
-        }
+    method canonical-name {
+        return Nil unless %.canonical-names.elems;
+        return %!canonical-names.keys.first;
+    }
+
+    method merge-canonical-names (Str:D $new-canonical-name) {
+        %!canonical-names{$new-canonical-name} = '';
     }
 
     method merge-ip-addresses (@new-ip-addresses) {
@@ -194,7 +210,7 @@ method !analyze-forward ($match, :$resolution) {
     }
     return Nil unless @ip-addresses.elems && $canonical-name;
     $resolution.merge-alias-names(%alias-names, @alias-names) if %alias-names.elems;
-    $resolution.merge-canonical-name($canonical-name);
+    $resolution.merge-canonical-names($canonical-name);
     $resolution.merge-ip-addresses(@ip-addresses);
     $resolution.supplement-records;
     return($resolution);
