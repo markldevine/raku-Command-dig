@@ -33,12 +33,7 @@ class Resolution {
 
     method merge-ip-addresses (@new-ip-addresses) {
         for @new-ip-addresses -> $new-ip-address {
-            if %!ip-addresses{$new-ip-address}:exists {
-                warn 'New IP address <' ~ $new-ip-address ~ '> already encountered. Code to reconcile NYI...'
-            }
-            else {
-                %!ip-addresses{$new-ip-address} = '';
-            }
+            %!ip-addresses{$new-ip-address} = '' unless %!ip-addresses{$new-ip-address}:exists;
         }
     }
 
@@ -231,9 +226,9 @@ method !lookup-reverse (Str:D $ip-address!, Resolution:D :$resolution) {
             my $out     =   $proc.out.slurp(:close);
             my $err     =   $proc.err.slurp(:close);
             my $match   =   DIG-REVERSE.parse($out);
-            return Nil  unless $match ~~ Match;
-            my $resobj  =   self!analyze-reverse(:$match, :$ip-address, :$resolution);
-            return $resobj with $resobj;
+            if $match ~~ Match {
+                return self!analyze-reverse(:$match, :$ip-address, :$resolution);
+            }
         }
     }
     my @cmd     =   flat @base-cmd,
