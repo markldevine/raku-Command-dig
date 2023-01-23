@@ -10,24 +10,19 @@ my Command::dig $digger    .= new(
                                  );
 
 
-my @unknowns                = <
-                                www.google.com
-                                10.10.137.41
-                                10.11.101.230
-                                10.11.105.96
-                                170.121.1.194
-                                JATSMPRD03
-                                P520TSMJGB
-                                ctstmgtgate1lpv
-                                isplc02
-                                nimjgb
-                                p650nimjgb
-                              >;
-@unknowns                   = <
-                                www.google.com
-                                www.ibm.com
-                                www.wmata.com
-                              >;
+my @unknowns                = [
+#                               'www.google.com',
+#                               '10.10.137.41',
+#                               '10.11.101.230',
+#                               '10.11.105.96',
+#                               '170.121.1.194',
+#                               'JATSMPRD03',
+                                'P520TSMJGB',
+#                               'ctstmgtgate1lpv',
+#                               'isplc02',
+#                               'nimjgb',
+#                               'p650nimjgb',
+                              ];
 
 my $table = Prettier::Table.new:
     title       => "Resolution Summary",
@@ -42,7 +37,7 @@ for @unknowns -> $unknown {
     my @alias-names = $resolution.alias-names.keys.sort;
     $table.add-row: [
                         $resolution.canonical-name,
-                        $resolution.ip-address,
+                        join("\n", $resolution.ip-addresses.keys),
                         @alias-names.join: "\n";
                     ];
 }

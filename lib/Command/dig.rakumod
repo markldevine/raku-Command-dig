@@ -231,7 +231,9 @@ method !lookup-reverse (Str:D $ip-address!, Resolution:D :$resolution) {
             my $proc    =   run @cmd, :out, :err;
             my $out     =   $proc.out.slurp(:close);
             my $err     =   $proc.err.slurp(:close);
-            my $resobj  =   self!analyze-reverse(DIG-REVERSE.parse($out), :$resolution);
+            my $match   =   DIG-REVERSE.parse($out);
+            return Nil  unless $match ~~ Match;
+            my $resobj  =   self!analyze-reverse(:$match, :$ip-address, :$resolution);
             return $resobj with $resobj;
         }
     }
